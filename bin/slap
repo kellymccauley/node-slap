@@ -1,0 +1,105 @@
+#!/usr/bin/env node
+'use strict';
+
+var
+    path = require('path')
+  , u = require('util')
+  , fs = require('fs')
+  , _ = require('lodash')
+  , program = require('commander')
+  , findup = require('findup-sync')
+  , debug = require('debug')('slap')
+
+  , slap = require('../slap')
+  , helper = require('../helper')
+
+  , baseDir = process.cwd()
+  , config
+  , taskSetsFile = 'taskSets.js'
+  , taskSets
+  , _err
+  ;
+
+_.str = require('underscore.string');
+_.mixin(_.str.exports());
+
+config = {
+  taskSetsToRun: [],
+  baseDir: baseDir
+};
+
+
+// debug("process.argv:\n%s", u.inspect(process.argv, {depth: 2}));
+
+program
+  .usage('[options] <taskSetName> [taskSetName ...]')
+  .option('-f, --taskSets <file>', 'The path to an alternate taskSets.js.')
+  .option('-t, --listTaskSets', 'Displays the list of task sets with descriptions.')
+  .option('-T, --listAllTaskSets', 'Displays the list of all task sets.');
+
+program.parse(process.argv);
+
+// debug("program.args: %s", u.inspect(program.args, {depth: 2}));
+
+if (program.args.length > 0) {
+  config.taskSetsToRun = config.taskSetsToRun.concat(program.args);
+}
+
+// debug("program.taskSetsFile: %s", program.taskSetsFile);
+
+if (program.taskSetsFile) {
+  taskSetsFile = program.taskSetsFile;
+}
+
+config.taskSetsFile = path.resolve(findup(taskSetsFile, {nocase: true}));
+
+if (!fs.existsSync(taskSetsFile)) {
+  console.log("File not found: %s", taskSetsFile);
+  program.outputHelp();
+  process.exit(1);
+}
+
+try {
+  taskSets = require(config.taskSetsFile);
+
+} catch (err) {
+  console.log("Unable to load the task sets from: %s", taskSetsFile);
+  throw err;
+
+}
+
+if (config.taskSetsToRun.length === 0) {
+  if (taskSets['default']) {
+    config.taskSetsToRun.push('default');
+  }
+}
+
+debug("config:\n%s", u.inspect(config, {depth: 4}));
+
+if (program.listTaskSets) {
+  helper.printTaskSets(config, taskSets, false);
+}
+
+if (program.listAllTaskSets) {
+  helper.printTaskSets(config, taskSets, true);
+}
+
+
+_.each(config.taskSetsToRun, function(taskSetName) {
+  slap(config, taskSets, taskSetName, function(err) {
+    if (err) {
+      _err = err;
+      return false;
+    }
+  });
+});
+
+if (_err) {
+  throw _err;
+}
+
+
+
+
+// vim: set filetype=javascript :
+

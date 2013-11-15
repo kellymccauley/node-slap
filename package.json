@@ -1,0 +1,61 @@
+{
+  "name": "slap",
+  "version": "0.2.0",
+  "description": "Slap your project around.  Yet another project build tool.",
+  "keywords": [
+    "slap",
+    "make",
+    "build",
+    "task",
+    "task set"
+  ],
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "https://github.com/kellymccauley/node-slap/blob/master/LICENSE"
+    }
+  ],
+  "author": {
+    "name": "Kelly A. McCauley",
+    "email": "kelly dot gitdev at 99kayaks dot com",
+    "url": "http://99kayaks.com/us#us-kelly-mccauley"
+  },
+  "homepage": "https://github.com/kellymccauley/node-slap",
+  "bugs": {
+    "url": "https://github.com/kellymccauley/node-slap/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kellymccauley/node-slap.git"
+  },
+  "engines": {
+    "node": ">=0.10.21"
+  },
+  "preferGlobal": true,
+  "main": "slap.js",
+  "bin": {
+    "slap": "bin/slap"
+  },
+  "scripts": {
+    "test": "node test/run_specs.js"
+  },
+  "dependencies": {
+    "cli-color": "~0.2.3",
+    "cli-table": "~0.2.0",
+    "commander": "~2.0.0",
+    "debug": "~0.7.3",
+    "findup-sync": "~0.1.2",
+    "glob": "~3.2.7",
+    "linewrap": "~0.2.1",
+    "lodash": "~2.3.0",
+    "resolve": "~0.5.1",
+    "shelljs": "~0.2.6",
+    "underscore.string": "~2.3.3"
+  },
+  "devDependencies": {
+    "mocha": "~1.14.0",
+    "should": "~2.1.0",
+    "less": "~1.5.0",
+    "mustache": "~0.7.3"
+  }
+}
