@@ -194,7 +194,7 @@ module.exports = function(taskSetName, taskConfig, taskSets, slapConfig, callbac
 
     } else {
       // from: was not specified in the task configuration.
-      errMsg = u.format("%s 'from' property is required and was not found in the task configuration: %s", logKey, u.inspect(taskConfig));
+      errMsg = u.format("%s 'from' property is required for the copy task and it was not found in the task configuration: %s", logKey, u.inspect(taskConfig));
       console.log(errMsg);
       _err = new Error(errMsg);
     }

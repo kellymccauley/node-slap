@@ -11,6 +11,10 @@ slap = module.exports = function(config, taskSets, taskSetName, callback) {
   'use strict';
   var _err, errMsg, taskSet, logKey, deps, completed, completedPropKey;
 
+  if (taskSets.context) {
+    context = taskSets.context
+  }
+
   taskSet = taskSets[taskSetName];
   if (!taskSet) {
     errMsg = u.format("Could not find the taskSet named %s.", taskSetName);

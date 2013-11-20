@@ -11,17 +11,29 @@ var path = require('path')
 
   , context
   , _runProperties = {}
-  , runProperties
-  , resolveProperty
+  , bindTo
+  , loadWith
   , removeProperty
-  , setProperty
   , reset
+  , resolveProperty
+  , runProperties
+  , setProperty
 
   , OBJ_SEP_RE = /\.+/
   ;
 
 
 context = module.exports = {};
+
+/**
+ * Binds this context to the given object.
+ *
+ * @param {Object} obj The object to whiche the context will be bound.
+ */
+bindTo = context.bindTo = function(obj) {
+  obj['context'] = context;
+}
+
 
 /**
  * Returns the run properties that users can store intermediate data.
@@ -32,6 +44,7 @@ runProperties = context.runProperties = function() {
   return _runProperties;
 }
 
+context.properties = context.props = context.runProperties;
 reset = context.reset = function() {
   'use strict';
   _runProperties = {};
@@ -99,6 +112,8 @@ resolveProperty = context.resolveProperty = function(propertyName, options) {
 
   return prop;
 }
+
+context.getProp = context.getProperty = context.property = context.resolveProp = context.resolveProperty;
 
 function _resolveIsDescendable(obj) {
   return !(
@@ -205,6 +220,12 @@ function _descendAndCreateProp(parts, parent, value) {
 
 }
 
+/**
+ * Sets the given property to the given value.
+ *
+ * @param {string|Array.<string>} propertyName The property name.
+ * @param {*} value The property's value.
+ */
 setProperty = context.setProperty = function(propertyName, value) {
   'use strict';
   var debug = d_setp
@@ -216,6 +237,8 @@ setProperty = context.setProperty = function(propertyName, value) {
 
   return prop;
 }
+
+context.setProp = context.setProperty;
 
 
 /**
@@ -264,9 +287,37 @@ removeProperty = context.removeProperty = function(propertyName) {
   return result;
 }
 
+context.removeProp = context.removeProperty;
+
 function _splitPropertyName(propertyName) {
   'use strict';
   return propertyName.split(OBJ_SEP_RE);
 }
 
 
+/**
+ * Loads this context with the given JSON or plain object.
+ * 
+ * @param {string|Object} data The string of JSON or the object to load into is
+ * @param {string|Array} [propertyName] The property name to assign the data to.
+ * context.
+ *
+ */
+loadWith = context.loadWith = function(data, propertyName) {
+  'use strict';
+  var d = null;
+  if (data) {
+    if (_.isString(data)) {
+      d = JSON.parse(data);
+    } else if (_.isObject(data)) {
+      d = data;
+    }
+  }
+
+  if (propertyName) {
+    setProperty(propertyName, d);
+  } else {
+    _runProperties = _.extend(_runProperties, data);
+  }
+
+}
