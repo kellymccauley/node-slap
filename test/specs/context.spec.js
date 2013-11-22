@@ -4,7 +4,7 @@ var context = require('../../context')
 ;
 
 describe('context', function() {
-  describe('resolveProperty', function() {
+  describe('resolveProperty()', function() {
 
     it("should throw an error if a property name was not given.", function() {
       var propertyName;
