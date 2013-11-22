@@ -8,19 +8,131 @@ var path = require('path')
   , linewrap = require('linewrap')
   , clc = require('cli-color')
   , Table = require('cli-table')
+
   , dbg = require('debug')
   , d_eg = dbg('slap:helper:expandGlob')
   , d_tso = dbg('slap:helper:timeStampOf')
 
   , helper
+  , events
+  , exitCode
   , timeStampOf
   , expandGlob
   , resolveModule
   , printTaskSets
+  , findPropertyNames
+  , reportLevel
+
+  , trues =  ['true',  'y', 'yes', 'on',  'enabled',  'active',   'allow',    'approve', 'permit']
+  , falses = ['false', 'n', 'no',  'off', 'disabled', 'inactive', 'disallow', 'deny',    'forbid']
+  , toBool
+
   ;
 
 helper = module.exports = {};
 
+// Event keys.
+events = helper.events = {
+  ERROR: 'error'
+  , RESOLVING_TASK_SETS_FILE: 'resolving_task_sets_file'
+  , RESOLVING_TASK_SETS_FILE_FINISHED: 'resolving_task_sets_file_finished'
+
+  , LOADING_TASK_SETS_FILE: 'loading_task_sets_file'
+  , LOADING_TASK_SETS_FILE_FINISHED: 'loading_task_sets_file_finished'
+
+  , RUNNING_DEPENDENT_TASK_SETS: 'running_dependent_task_sets'
+  , RUNNING_DEPENDENT_TASK_SETS_FINISHED: 'running_dependent_task_sets_finished'
+
+  , RUNNING_TASK: 'running_task'
+  , RUNNING_TASK_FINISHED: 'running_task_finished'
+
+  , TASK_PRE_EXECUTION_STARTING: 'task_pre_execution_starting'
+  , TASK_PRE_EXECUTION_FINISHED: 'task_pre_execution_finished'
+
+  , TASK_EXECUTION_STARTING: 'task_execution_starting'
+  , TASK_EXECUTION_FINISHED: 'task_execution_finished'
+
+  , TASK_POST_EXECUTION_STARTING: 'task_post_execution_starting'
+  , TASK_POST_EXECUTION_FINISHED: 'task_post_execution_finished'
+
+  , TASK_ERROR: 'task_error'
+
+  , ECHO: 'echo'
+};
+
+// Process exit codes.
+exitCode = helper.exitCode = {
+  FILE_NOT_FOUND: 1,
+  TASK_SET_NOT_FOUND: 5,
+  ERROR: 255
+}
+
+// Report levels (AKA log levels)
+reportLevel = helper.rptLvl = helper.reportLevel = {
+  'silent':   0, 
+  'error':    1, 
+  'warning':  2, 
+  'notice':   3, 
+  'info':     4, 
+  'debug':    5, 
+  'trace':    6, 
+  'internal': 7,
+
+  0: 'silent', 
+  1: 'error', 
+  2: 'warning', 
+  3: 'notice', 
+  4: 'info', 
+  5: 'debug', 
+  6: 'trace', 
+  7: 'internal'
+}
+
+
+/**
+ * Finds the given property name within the given object.
+ *
+ * ```
+ *  names = findPropertyNames(obj, propertyName);
+ *  names = findPropertyNames(obj, function(val, key, obj) {...});
+ * ```
+ */
+findPropertyNames = helper.findPropertyNames = function(obj, propertyName) {
+  'use strict';
+  var results = []
+    , callback;
+
+  if (_.isString(propertyName)) {
+    callback = function(val, key, obj) {
+      return (propertyName === key);
+    };
+
+  } else if (_.isRegExp(propertyName)) {
+    callback = function(val, key, obj) {
+      return (propertyName.test(key));
+    };
+
+  } else if (_.isFunction(propertyName)) {
+    callback = propertyName;
+
+  }
+
+  if (callback) {
+    _.forIn(obj, function(value, key, obj) {
+      if (callback(value, key, obj)) {
+        results.push(key);
+      }
+    });
+  }
+
+  return results;
+}
+
+
+
+/**
+ * Tries to resolve the given module name within the give search paths.
+ */
 resolveModule = helper.resolveModule = function(moduleName, searchPaths) {
   'use strict';
   var result
@@ -73,6 +185,11 @@ resolveModule = helper.resolveModule = function(moduleName, searchPaths) {
 
 }
 
+
+
+/**
+ * Gets the time stamp of the given file.
+ */
 timeStampOf = helper.timeStampOf = function(file, callback) {
   'use strict';
   var debug = d_tso, stats, ts, _err, cb;
@@ -103,6 +220,7 @@ timeStampOf = helper.timeStampOf = function(file, callback) {
   return ts;
 }
 
+
 /**
  * Expands the given glob expression into a list of files.
  *
@@ -132,6 +250,8 @@ expandGlob = helper.expandGlob = function(globExpr, options) {
 
   return out;
 }
+
+
 
 /**
  * Prints out the list of task sets with descriptions.
@@ -174,9 +294,13 @@ printTaskSets = helper.printTaskSets = function(config, taskSets, showAll) {
       , desc
       , dependsOn
       , prunedDesc
-      , row;
+      , row
+      , descKey;
 
     ts = taskSets[tsName];
+    descKey = _.findKey(taskSet, function(val, key) {
+      return (_.startsWith(key, 'desc'));
+    });
 
     if (showAll || ts.description) {
       row = [tsName, ''];
@@ -221,4 +345,30 @@ printTaskSets = helper.printTaskSets = function(config, taskSets, showAll) {
 }
 
 
+toBool = helper.toBool = helper.toBoolean = function(val, thisArg) {
+  'use strict';
+  var out, tmp;
+
+  switch (typeof val) {
+    case 'boolean':
+      out = val;
+      break;
+
+    case 'function':
+      if (thisArg) out = toBoolean(val.call(thisArg));
+      break;
+
+    case 'string':
+      tmp = val.trim().toLowerCase();
+      if (_.contains(trues, tmp)) {
+        out = true;
+      } else if (_.contains(falses, tmp)) {
+        out = false;
+      }
+
+      break;
+  } 
+
+  return out;
+}
 
