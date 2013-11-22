@@ -4,100 +4,134 @@
 var
     path = require('path')
   , u = require('util')
-  , fs = require('fs')
   , _ = require('lodash')
   , program = require('commander')
   , findup = require('findup-sync')
-  , debug = require('debug')('slap')
+  , debug = require('debug')('bin/slap')
 
-  , slap = require('../slap')
-  , helper = require('../helper')
-
-  , baseDir = process.cwd()
+  , helper = require('./helper')
+  , Slap = require('../slap')
+  , slap
   , config
-  , taskSetsFile = 'taskSets.js'
-  , taskSets
-  , _err
+  , onFinishedCallback
   ;
 
-_.str = require('underscore.string');
-_.mixin(_.str.exports());
-
 config = {
+  taskSetsFile: 'taskSets.js',
   taskSetsToRun: [],
   baseDir: baseDir
 };
 
 
-// debug("process.argv:\n%s", u.inspect(process.argv, {depth: 2}));
 
 program
   .usage('[options] <taskSetName> [taskSetName ...]')
   .option('-f, --taskSets <file>', 'The path to an alternate taskSets.js.')
   .option('-t, --listTaskSets', 'Displays the list of task sets with descriptions.')
-  .option('-T, --listAllTaskSets', 'Displays the list of all task sets.');
+  .option('-T, --listAllTaskSets', 'Displays the list of all task sets.')
+  .option('-v, --verbose [level]', 'Sets the verbosity level. 0: silent, 1: error, 2: warning, 3: notice, 4: info, 5: debug, 6: trace, 7+: internal debugging (To view internal debugging, you must also set the DEBUG="*" environment variable)')
+  .option('--color [on|off]', 'Turns colored output on or off.')
+  .option('--color-dark-bg', 'Colors output to be viewable on a dark background.')
+  .option('--color-light-bg', 'Colors output to be viewable on a light background.')
+;
 
 program.parse(process.argv);
-
-// debug("program.args: %s", u.inspect(program.args, {depth: 2}));
 
 if (program.args.length > 0) {
   config.taskSetsToRun = config.taskSetsToRun.concat(program.args);
 }
 
-// debug("program.taskSetsFile: %s", program.taskSetsFile);
-
+// -f, --taskSets <file>
+//
 if (program.taskSetsFile) {
-  taskSetsFile = program.taskSetsFile;
+  config.taskSetsFile = program.taskSetsFile;
 }
 
-config.taskSetsFile = path.resolve(findup(taskSetsFile, {nocase: true}));
-
-if (!fs.existsSync(taskSetsFile)) {
-  console.log("File not found: %s", taskSetsFile);
-  program.outputHelp();
-  process.exit(1);
+// --color [on|off]
+//
+if (program.color) {
+  config.useColors = helper.toBool(program.color);
 }
 
-try {
-  taskSets = require(config.taskSetsFile);
-
-} catch (err) {
-  console.log("Unable to load the task sets from: %s", taskSetsFile);
-  throw err;
-
+// --color-dark-bg
+//
+if (program['color-dark-bg']) {
+  config.outputBackgroundType = 'dark';
 }
 
-if (config.taskSetsToRun.length === 0) {
-  if (taskSets['default']) {
-    config.taskSetsToRun.push('default');
-  }
+// --color-light-bg
+//
+if (program['color-light-bg']) {
+  config.outputBackgroundType = 'light';
 }
 
-debug("config:\n%s", u.inspect(config, {depth: 4}));
-
+// -t, --listTaskSets
+//
 if (program.listTaskSets) {
   helper.printTaskSets(config, taskSets, false);
 }
 
+// -T, --listAllTaskSets
+//
 if (program.listAllTaskSets) {
   helper.printTaskSets(config, taskSets, true);
 }
 
-
-_.each(config.taskSetsToRun, function(taskSetName) {
-  slap(config, taskSets, taskSetName, function(err) {
-    if (err) {
-      _err = err;
-      return false;
-    }
-  });
-});
-
-if (_err) {
-  throw _err;
+// -v, --verbose [level]
+//
+if (program.verbose) {
+  config.reportLevel = parseInt(program.verbose);
 }
 
+onFinishedCallback = function(err, msg, exitCode) {
+  var showHelp = false
+    , noHurlError = false
+  ;
+
+  exitCode = exitCode || 0;
+
+  if (typeof msg === 'number') {
+    exitCode = msg;
+    msg = null;
+  }
+
+
+  if (err) {
+    if (_.isString(err)) {
+      msg = err;
+
+    } else if (err instanceof Error) {
+      if (!msg) msg = err.message;
+      if (err.exitCode) exitCode = err.exitCode
+      if (err.showHelp) showHelp = true;
+      if (err.noHurlError) noHurlError = true;
+
+    }
+  }
+
+
+  if (msg) {
+    console.log(msg);
+  }
+
+  if (err && !noHurlError) {
+    throw err;
+  }
+
+  if (showHelp) {
+    program.outputHelp();
+  }
+
+  if (exitCode) {
+    process.exit(exitCode);
+  } else {
+    process.exit(0);
+  }
+
+}
+
+slap = new Slap(config, program.outputHelpFn, onFinishedCallback);
+slap.run();
 
 
 
