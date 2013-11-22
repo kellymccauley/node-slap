@@ -1,6 +1,6 @@
 {
   "name": "slap",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Slap your project around.  Yet another project build tool.",
   "keywords": [
     "slap",
@@ -54,8 +54,6 @@
   },
   "devDependencies": {
     "mocha": "~1.14.0",
-    "should": "~2.1.0",
-    "less": "~1.5.0",
-    "mustache": "~0.7.3"
+    "should": "~2.1.0"
   }
 }
