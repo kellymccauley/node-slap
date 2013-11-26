@@ -19,7 +19,12 @@ function Task(taskName, taskDescription, preExecute, execute, postExecute, optio
     },
     options
   );
-  this.name = taskName || throw new Error("Unable to create a task.  A task name was not provided.  When creating a new task, `taskName` must be a string");
+
+  if (!taskName) {
+    throw new Error("Unable to create a task.  A task name was not provided.  When creating a new task, `taskName` must be a string");
+  }
+
+  this.name = taskName;
 
   this.description = taskDescription;
 
