@@ -17,7 +17,7 @@ _.str = require('underscore.string');
 _.mixin(_.str.exports());
 
 
-function Slap(runConfig, onFinishedCallback, outputHelpFn) {
+function Slap(runConfig, onFinishedCallback) {
   'use strict';
   var cfg
   ;
@@ -31,9 +31,6 @@ function Slap(runConfig, onFinishedCallback, outputHelpFn) {
   };
 
   this.config = _.assign(cfg, runConfig);
-
-  this.outputHelpFn = outputHelpFn;
-  this.onFinishedCallback = onFinishedCallback;
 
   this.context = context;
 

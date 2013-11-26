@@ -130,7 +130,7 @@ onFinishedCallback = function(err, msg, exitCode) {
 
 }
 
-slap = new Slap(config, program.outputHelpFn, onFinishedCallback);
+slap = new Slap(config, onFinishedCallback);
 slap.run();
 
 
