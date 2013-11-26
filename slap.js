@@ -23,7 +23,7 @@ function Slap(runConfig, onFinishedCallback) {
   ;
 
   cfg = {
-    baseDir: baseDir,
+    baseDir: process.cwd(),
     taskSetsFile: 'taskSets.js',
     taskSetsToRun: [],
     useColors: true,
@@ -32,6 +32,7 @@ function Slap(runConfig, onFinishedCallback) {
 
   this.config = _.assign(cfg, runConfig);
 
+  this.reportLevel = this.config.reportLevel;
   this.context = context;
 
   this.canContinue = true;
@@ -49,12 +50,63 @@ function Slap(runConfig, onFinishedCallback) {
   global['simpleTask'] = this.simpleTask;
   global['descriptiveTask'] = this.descriptiveTask;
   global['echo'] = this.echo;
+
 }
 
 u.inherits(Slap, EventEmitter);
 
-module.exports.Slap = Slap;
+exports = module.exports = Slap;
 
+/**
+ * Resolves the file containing the task sets.
+ *
+ * @private
+ */
+Slap.prototype.resolveTaskSetsFile = function() {
+var config = this.config
+    , _err
+    , errMsg
+    , exitCode
+    , fp
+;
+
+  // Resolve the file containing the task sets.
+  this.emit(helper.events.RESOLVING_TASK_SETS_FILE, this, config.taskSetsFile);
+
+  fp = path.normalize(config.taskSetsFile);
+
+  // DEBUG {{{
+  if (this.reportLevel >= helper.reportLevel['internal8']) {
+    debug('config.taskSetsFile (initial): %s', config.taskSetsFile);
+    debug('fp (normalized):               %s', config.taskSetsFile);
+  }
+  // DEBUG }}}
+
+  fp = findup(config.taskSetsFile, {nocase: true});
+
+  if (this.reportLevel >= helper.reportLevel['internal8']) {
+    debug('fp (findup):                   %s', config.taskSetsFile);
+  }
+
+  if (fp) {
+    config.taskSetsFile = path.resolve(fp);
+  }
+
+  if (this.reportLevel >= helper.reportLevel['internal0']) {
+    debug('config.taskSetsFile (final):    %s', config.taskSetsFile);
+  }
+
+  if (!fs.existsSync(config.taskSetsFile)) {
+    _err = new Error(u.format("File not found: %s", config.taskSetsFile));
+    _err.exitCode = helper.exitCode.FILE_NOT_FOUND;
+    return !this.encounteredError(_err, null, null, [config.taskSetsFile]);
+
+  }
+
+  this.emit(helper.events.RESOLVING_TASK_SETS_FILE_FINISHED, this, config.taskSetsFile);
+
+  return true;
+}
 
 Slap.prototype.run = function() {
   'use strict';
@@ -66,50 +118,38 @@ Slap.prototype.run = function() {
     , taskSets
   ;
 
+  if (this.resolveTaskSetsFile()) {
 
-  // Resolve the file containing the task sets.
-  this.emit(helper.events.RESOLVING_TASK_SETS_FILE, this, config.taskSetsFile);
+    // Load the task sets as a module.
+    this.emit(helper.events.LOADING_TASK_SETS_FILE, this, config.taskSetsFile);
+    try {
+      taskSets = require(config.taskSetsFile);
+      this.taskSets = taskSets;
 
-  config.taskSetsFile = path.resolve(findup(config.taskSetsFile, {nocase: true}));
-
-  if (!fs.existsSync(config.taskSetsFile)) {
-    _err = new Error(u.format("File not found: %s", config.taskSetsFile));
-    _err.exitCode = helper.exitCode.FILE_NOT_FOUND;
-    return !this.encounteredError(_err, null, null, [config.taskSetsFile]);
-
-  }
-
-  this.emit(helper.events.RESOLVING_TASK_SETS_FILE_FINISHED, this, config.taskSetsFile);
-
-  // Load the task sets as a module.
-  this.emit(helper.events.LOADING_TASK_SETS_FILE, this, config.taskSetsFile);
-  try {
-    taskSets = require(config.taskSetsFile);
-    this.taskSets = taskSets;
-
-  } catch (err) {
-    errMsg = u.format("Unable to load the task sets from: %s", config.taskSetsFile);
-    return !this.encounteredError(err, null, errMsg, [config.taskSetsFile]);
-  }
-
-  this.emit(helper.events.LOADING_TASK_SETS_FILE_FINISHED, this, config.taskSetsFile);
-
-  // Set the default task set, if necessary.
-  if (config.taskSetsToRun.length === 0) {
-    if (taskSets['default']) {
-      config.taskSetsToRun.push('default');
+    } catch (err) {
+      errMsg = u.format("Unable to load the task sets from: %s", config.taskSetsFile);
+      return !this.encounteredError(err, null, errMsg, [config.taskSetsFile]);
     }
+
+    this.emit(helper.events.LOADING_TASK_SETS_FILE_FINISHED, this, config.taskSetsFile);
+
+    // Set the default task set, if necessary.
+    if (config.taskSetsToRun.length === 0) {
+      if (taskSets['default']) {
+        config.taskSetsToRun.push('default');
+      }
+    }
+
+    debug("config:\n%s", u.inspect(config, {depth: 4}));
+
+    // If the task sets has a context, use it.
+    if (taskSets.context) {
+      this.context = taskSets.context
+    }
+
+    // Run each the specified task sets.
+    _.each(config.taskSetsToRun, this.runTaskSet);
   }
-
-  debug("config:\n%s", u.inspect(config, {depth: 4}));
-
-  // If the task sets has a context, use it.
-  if (taskSets.context) {
-    this.context = taskSets.context
-  }
-
-  // Run each the specified task sets.
-  _.each(config.taskSetsToRun, this.runTaskSet);
 
   return this.canContinue
 
@@ -125,7 +165,7 @@ Slap.prototype.runTaskSet = function(taskSetName) {
   var self = this
     , _err
     , errMsg
-    , result = true;
+    , result = true
     , taskSet
     , tasks
     , tasksKey
@@ -420,7 +460,7 @@ Slap.prototype.logKeyStack = Slap.prototype.logKey = function() {
   return this._logKeyStack;
 }
 
-Slap.prototype.encounteredError(err, eventKey, extraErrMsg, errArgs) {
+Slap.prototype.encounteredError = function(err, eventKey, extraErrMsg, errArgs) {
   var result = false;
 
   if (err) {
