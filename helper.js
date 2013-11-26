@@ -77,6 +77,16 @@ reportLevel = helper.rptLvl = helper.reportLevel = {
   'debug':    5, 
   'trace':    6, 
   'internal': 7,
+  'internal0': 7,
+  'internal1': 8,
+  'internal2': 9,
+  'internal3': 10,
+  'internal4': 11,
+  'internal5': 12,
+  'internal6': 13,
+  'internal7': 14,
+  'internal8': 15,
+  'internal9': 16,
 
   0: 'silent', 
   1: 'error', 
@@ -85,7 +95,17 @@ reportLevel = helper.rptLvl = helper.reportLevel = {
   4: 'info', 
   5: 'debug', 
   6: 'trace', 
-  7: 'internal'
+  7: 'internal',
+  8: 'internal1',
+  9: 'internal2',
+  10: 'internal3',
+  11: 'internal4',
+  12: 'internal5',
+  13: 'internal6',
+  14: 'internal7',
+  15: 'internal8',
+  16: 'internal9',
+
 }
 
 
