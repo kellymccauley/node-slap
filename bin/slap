@@ -19,7 +19,7 @@ var
 config = {
   taskSetsFile: 'taskSets.js',
   taskSetsToRun: [],
-  baseDir: baseDir
+  baseDir: process.cwd()
 };
 
 
@@ -134,6 +134,4 @@ slap = new Slap(config, onFinishedCallback);
 slap.run();
 
 
-
 // vim: set filetype=javascript :
-
