@@ -53,7 +53,7 @@ describe('Slap', function() {
 
   });
 
-  describe('after construction', function() {
+  describe('After construction', function() {
     var config;
 
     config = {

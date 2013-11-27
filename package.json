@@ -50,7 +50,8 @@
     "lodash": "~2.3.0",
     "resolve": "~0.5.1",
     "shelljs": "~0.2.6",
-    "underscore.string": "~2.3.3"
+    "underscore.string": "~2.3.3",
+    "q": "~0.9.7"
   },
   "devDependencies": {
     "mocha": "~1.14.0",
