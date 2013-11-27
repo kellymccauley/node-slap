@@ -87,3 +87,4 @@ taskSets.foo = {
 }
 
 module.exports = taskSets;
+
